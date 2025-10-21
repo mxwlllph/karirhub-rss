@@ -3,18 +3,18 @@ main = "src/index.js"
 compatibility_date = "2023-12-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Environment variables
+# Environment variables (optimized for free plan)
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
 API_BASE_URL = "https://api.kemnaker.go.id/karirhub/catalogue/v1"
-CACHE_TTL = "1800"
-MAX_JOBS_PER_FEED = "20"
+CACHE_TTL = "3600"  # 1 hour cache for free plan efficiency
+MAX_JOBS_PER_FEED = "30"  # Optimized for free plan
 RSS_TITLE = "Lowongan Kerja Terbaru - KarirHub Indonesia"
 RSS_DESCRIPTION = "Feed lowongan kerja resmi dari Kementerian Ketenagakerjaan Indonesia"
 RSS_LANGUAGE = "id"
 RSS_WEBMASTER = "admin@karirhub.com"
 RSS_GENERATOR = "Cloudflare Worker RSS Generator v1.0"
-ENABLE_ANALYTICS = "true"
+ENABLE_ANALYTICS = "false"  # Disabled to save D1 operations on free plan
 LOG_LEVEL = "info"
 
 # KV namespace for caching
@@ -29,34 +29,12 @@ binding = "RSS_ANALYTICS"
 database_name = "karirhub-rss-analytics"
 database_id = "5b114d74-8490-4cfa-a5dc-f2c2a142f686"
 
-# Production environment
-[env.production]
-name = "karirhub-rss-prod"
-
-[env.production.vars]
-ENVIRONMENT = "production"
-CACHE_TTL = "1800"
-MAX_JOBS_PER_FEED = "50"
-LOG_LEVEL = "warn"
-
-# Staging environment
-[env.staging]
-name = "karirhub-rss-staging"
-
-[env.staging.vars]
-ENVIRONMENT = "staging"
-CACHE_TTL = "900"
-MAX_JOBS_PER_FEED = "10"
-LOG_LEVEL = "debug"
-
-# Limits and configuration
-[limits]
-cpu_ms = 50000
+# Simplified configuration - single environment for free plan efficiency
 
 # Build configuration
 [build]
 command = ""
 
-# Triggers for scheduled updates
+# Triggers for scheduled updates (hourly for free plan optimization)
 [triggers]
-crons = ["*/15 * * * *"]  # Every 15 minutes
+crons = ["0 * * * *"]  # Every hour (free plan friendly)

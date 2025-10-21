@@ -7,8 +7,6 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "deploy:staging": "wrangler deploy --env staging",
-    "deploy:prod": "wrangler deploy --env production",
     "pages:dev": "wrangler pages dev",
     "pages:deploy": "wrangler pages deploy",
     "test": "node test/api-test.js && node test/rss-validation.js",
@@ -18,8 +16,8 @@
     "lint": "echo 'Linting not configured yet'",
     "format": "echo 'Formatting not configured yet'",
     "logs": "wrangler tail",
-    "kv:list": "wrangler kv:key list --namespace-id=RSS_CACHE",
-    "kv:clear": "wrangler kv:key delete --namespace-id=RSS_CACHE --preview=false"
+    "kv:list": "wrangler kv:key list --namespace-id=2e55b61a8a1343909bfa224f157b037c",
+    "kv:clear": "wrangler kv:key delete --namespace-id=2e55b61a8a1343909bfa224f157b037c --preview=false"
   },
   "keywords": [
     "cloudflare-workers",

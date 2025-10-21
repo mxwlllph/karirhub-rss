@@ -13,7 +13,10 @@
       "Bash(npm test)",
       "Bash(timeout:*)",
       "Bash(npm install:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(wrangler --version:*)",
+      "Bash(npx wrangler:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
