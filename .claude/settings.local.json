@@ -25,7 +25,10 @@
       "Bash(npm run deploy:*)",
       "Bash(echo:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run)"
+      "Bash(npm run)",
+      "Bash(wrangler auth login:*)",
+      "WebFetch(domain:karirhub-rss.tekipik.workers.dev)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
