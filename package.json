@@ -9,9 +9,12 @@
     "deploy": "wrangler deploy",
     "deploy:staging": "wrangler deploy --env staging",
     "deploy:prod": "wrangler deploy --env production",
+    "pages:dev": "wrangler pages dev",
+    "pages:deploy": "wrangler pages deploy",
     "test": "node test/api-test.js && node test/rss-validation.js",
     "test:api": "node test/api-test.js",
     "test:rss": "node test/rss-validation.js",
+    "audit:fix": "npm audit fix",
     "lint": "echo 'Linting not configured yet'",
     "format": "echo 'Formatting not configured yet'",
     "logs": "wrangler tail",
@@ -42,7 +45,7 @@
   },
   "homepage": "https://github.com/mxwlllph/karirhub-rss#readme",
   "devDependencies": {
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.114.15"
   },
   "dependencies": {},
   "engines": {

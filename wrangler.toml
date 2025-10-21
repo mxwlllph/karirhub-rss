@@ -1,4 +1,4 @@
-name = "karirhub-rss-feed"
+name = "karirhub-rss"
 main = "src/index.js"
 compatibility_date = "2023-12-01"
 compatibility_flags = ["nodejs_compat"]
@@ -17,24 +17,21 @@ RSS_GENERATOR = "Cloudflare Worker RSS Generator v1.0"
 ENABLE_ANALYTICS = "true"
 LOG_LEVEL = "info"
 
-# KV namespace for caching
+# KV namespace for caching (to be created)
 [[kv_namespaces]]
 binding = "RSS_CACHE"
-id = "your-kv-namespace-id"
-preview_id = "your-preview-kv-namespace-id"
+id = "RSS_CACHE_ID"  # Replace with actual ID after: wrangler kv:namespace create "RSS_CACHE"
+preview_id = "RSS_CACHE_PREVIEW_ID"  # Replace with actual ID after: wrangler kv:namespace create "RSS_CACHE" --preview
 
-# D1 database for analytics (optional)
+# D1 database for analytics (to be created)
 [[d1_databases]]
 binding = "RSS_ANALYTICS"
 database_name = "karirhub-rss-analytics"
-database_id = "your-d1-database-id"
+database_id = "RSS_ANALYTICS_ID"  # Replace with actual ID after: wrangler d1 create "karirhub-rss-analytics"
 
 # Production environment
 [env.production]
-name = "karirhub-rss-feed-prod"
-routes = [
-  { pattern = "rss.yourdomain.com/*", zone_name = "yourdomain.com" }
-]
+name = "karirhub-rss-prod"
 
 [env.production.vars]
 ENVIRONMENT = "production"
@@ -44,7 +41,7 @@ LOG_LEVEL = "warn"
 
 # Staging environment
 [env.staging]
-name = "karirhub-rss-feed-staging"
+name = "karirhub-rss-staging"
 
 [env.staging.vars]
 ENVIRONMENT = "staging"
@@ -61,5 +58,5 @@ cpu_ms = 50000
 command = ""
 
 # Triggers for scheduled updates
-[[triggers]]
+[triggers]
 crons = ["*/15 * * * *"]  # Every 15 minutes

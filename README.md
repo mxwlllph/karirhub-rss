@@ -39,7 +39,7 @@ Template: Job listing dengan company branding
 
 ### Prerequisites
 - Node.js 18+
-- Cloudflare account
+- Cloudflare account with GitHub integration
 - Wrangler CLI
 
 ### 1. Installation
@@ -52,27 +52,48 @@ cd karirhub-rss
 npm install
 ```
 
-### 2. Cloudflare Setup
-```bash
-# Login dan buat KV namespace
-wrangler login
-wrangler kv:namespace create "RSS_CACHE"
+### 2. Cloudflare Pages Setup
+**🎯 Recommended: Use automated setup script**
 
-# Update wrangler.toml dengan KV namespace ID
+**Windows:**
+```cmd
+setup-cloudflare-resources.bat
 ```
 
-### 3. Test & Deploy
+**Linux/Mac:**
 ```bash
-# Test lokal
+chmod +x setup-cloudflare-resources.sh
+./setup-cloudflare-resources.sh
+```
+
+**📖 Manual Setup:** See [Cloudflare Setup Guide](./cloudflare-setup.md)
+
+### 3. Deploy to Cloudflare Pages
+1. **Go to [Cloudflare Pages](https://dash.cloudflare.com/pages)**
+2. **Connect GitHub** → Select `karirhub-rss` repository
+3. **Build Settings:**
+   - Build command: `npm install`
+   - Build output directory: `/`
+   - Root directory: `/`
+4. **Add Environment Variables:**
+   - `CLOUDFLARE_API_TOKEN`: Your API token
+   - `CLOUDFLARE_ACCOUNT_ID`: Your account ID
+5. **Configure Functions Bindings** (see setup guide)
+6. **Deploy!**
+
+### 4. Test Your RSS Feed
+```bash
+# Test locally
 npm run dev
 curl http://localhost:8787/rss
 
-# Deploy ke production
-wrangler deploy --env production
-
-# RSS feed siap digunakan!
-# https://your-worker.workers.dev/rss
+# After deployment
+curl https://karirhub-rss.pages.dev/rss
+curl https://karirhub-rss.pages.dev/health
 ```
+
+🎉 **RSS Feed siap digunakan!**
+`https://karirhub-rss.pages.dev/rss`
 
 ## 📊 Available Endpoints
 
@@ -193,22 +214,36 @@ time curl https://your-worker.workers.dev/rss
 
 ## 🚀 Deployment
 
-### Environments
+### Cloudflare Pages Architecture
 - **Development**: `localhost:8787` (local testing)
-- **Staging**: `staging.karirhub.workers.dev` (pre-production)
-- **Production**: `karirhub.com` (live service)
+- **Preview**: `random-string.karirhub-rss.pages.dev` (automatic PR deployments)
+- **Production**: `karirhub-rss.pages.dev` (main branch)
 
-### Deploy Commands
+### Automated Deployments
+- **Main branch** → Production Pages
+- **Develop branch** → Preview Pages
+- **Pull requests** → Temporary preview environments
+
+### Local Development
 ```bash
-# Development
-npm run dev
-
-# Staging
-npm run deploy:staging
-
-# Production
-npm run deploy:prod
+npm run dev          # Start local development server
+npm run test         # Run test suite
+npm run test:api     # Test API connectivity
+npm run test:rss     # Validate RSS structure
 ```
+
+### Deployment Commands
+```bash
+# Standalone Workers (legacy - not recommended)
+npm run deploy:staging
+npm run deploy:prod
+
+# Pages Functions (current approach)
+npm run pages:dev
+npm run pages:deploy
+```
+
+**📖 Complete Setup Guide:** See [Cloudflare Setup Guide](./cloudflare-setup.md)
 
 ## 🤝 Contributing
 

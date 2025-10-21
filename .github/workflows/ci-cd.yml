@@ -40,7 +40,7 @@ jobs:
         echo "Configuration validation complete"
 
   deploy-staging:
-    name: Deploy to Staging
+    name: Deploy to Staging (Preview)
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/develop'
@@ -59,15 +59,22 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Deploy to Cloudflare Workers (Staging)
-      run: npx wrangler deploy --env staging
-      env:
-        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    - name: Fix security vulnerabilities
+      run: npm run audit:fix
+
+    - name: Deploy to Cloudflare Pages (Preview)
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: karirhub-rss
+        directory: .
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Health check staging
       run: |
         sleep 10
-        curl -f https://karirhub-rss-staging.workers.dev/health || exit 1
+        curl -f https://karirhub-rss.pages.dev/health || exit 1
         echo "Staging deployment health check passed"
 
   deploy-production:
@@ -90,24 +97,32 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Deploy to Cloudflare Workers (Production)
-      run: npx wrangler deploy --env production
-      env:
-        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    - name: Fix security vulnerabilities
+      run: npm run audit:fix
+
+    - name: Deploy to Cloudflare Pages (Production)
+      uses: cloudflare/pages-action@v1
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        projectName: karirhub-rss
+        directory: .
+        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        deployment-trigger: push
 
     - name: Health check production
       run: |
         sleep 10
-        curl -f https://karirhub-rss.workers.dev/health || exit 1
+        curl -f https://karirhub-rss.pages.dev/health || exit 1
         echo "Production deployment health check passed"
 
     - name: Update deployment status
       if: success()
       run: |
         echo "🎉 Production deployment successful!"
-        echo "RSS Feed: https://karirhub-rss.workers.dev/rss"
-        echo "JSON Feed: https://karirhub-rss.workers.dev/json"
-        echo "Health: https://karirhub-rss.workers.dev/health"
+        echo "RSS Feed: https://karirhub-rss.pages.dev/rss"
+        echo "JSON Feed: https://karirhub-rss.pages.dev/json"
+        echo "Health: https://karirhub-rss.pages.dev/health"
 
   security-scan:
     name: Security Scan
