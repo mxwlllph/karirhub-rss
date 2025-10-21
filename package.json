@@ -1,0 +1,51 @@
+{
+  "name": "karirhub-rss-feed",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker RSS Feed Generator for KarirHub Job Listings",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:prod": "wrangler deploy --env production",
+    "test": "node test/api-test.js && node test/rss-validation.js",
+    "test:api": "node test/api-test.js",
+    "test:rss": "node test/rss-validation.js",
+    "lint": "echo 'Linting not configured yet'",
+    "format": "echo 'Formatting not configured yet'",
+    "logs": "wrangler tail",
+    "kv:list": "wrangler kv:key list --namespace-id=RSS_CACHE",
+    "kv:clear": "wrangler kv:key delete --namespace-id=RSS_CACHE --preview=false"
+  },
+  "keywords": [
+    "cloudflare-workers",
+    "rss",
+    "job-listings",
+    "karirhub",
+    "api-integration",
+    "social-media",
+    "wordpress",
+    "zapier"
+  ],
+  "author": {
+    "name": "KarirHub RSS Team",
+    "email": "admin@karirhub.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mxwlllph/karirhub-rss.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mxwlllph/karirhub-rss/issues"
+  },
+  "homepage": "https://github.com/mxwlllph/karirhub-rss#readme",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

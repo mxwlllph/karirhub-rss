@@ -1,0 +1,65 @@
+name = "karirhub-rss-feed"
+main = "src/index.js"
+compatibility_date = "2023-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables
+[vars]
+ENVIRONMENT = "development"
+API_BASE_URL = "https://api.kemnaker.go.id/karirhub/catalogue/v1"
+CACHE_TTL = "1800"
+MAX_JOBS_PER_FEED = "20"
+RSS_TITLE = "Lowongan Kerja Terbaru - KarirHub Indonesia"
+RSS_DESCRIPTION = "Feed lowongan kerja resmi dari Kementerian Ketenagakerjaan Indonesia"
+RSS_LANGUAGE = "id"
+RSS_WEBMASTER = "admin@karirhub.com"
+RSS_GENERATOR = "Cloudflare Worker RSS Generator v1.0"
+ENABLE_ANALYTICS = "true"
+LOG_LEVEL = "info"
+
+# KV namespace for caching
+[[kv_namespaces]]
+binding = "RSS_CACHE"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# D1 database for analytics (optional)
+[[d1_databases]]
+binding = "RSS_ANALYTICS"
+database_name = "karirhub-rss-analytics"
+database_id = "your-d1-database-id"
+
+# Production environment
+[env.production]
+name = "karirhub-rss-feed-prod"
+routes = [
+  { pattern = "rss.yourdomain.com/*", zone_name = "yourdomain.com" }
+]
+
+[env.production.vars]
+ENVIRONMENT = "production"
+CACHE_TTL = "1800"
+MAX_JOBS_PER_FEED = "50"
+LOG_LEVEL = "warn"
+
+# Staging environment
+[env.staging]
+name = "karirhub-rss-feed-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+CACHE_TTL = "900"
+MAX_JOBS_PER_FEED = "10"
+LOG_LEVEL = "debug"
+
+# Limits and configuration
+[limits]
+cpu_ms = 50000
+
+# Build configuration
+[build]
+command = ""
+
+# Triggers for scheduled updates
+[[triggers]]
+crons = ["*/15 * * * *"]  # Every 15 minutes
