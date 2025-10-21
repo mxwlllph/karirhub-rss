@@ -27,28 +27,52 @@ export class DataAggregator {
    */
   async aggregateJobData(maxJobs = CONFIG.MAX_JOBS_PER_FEED) {
     try {
-      console.log(`Starting job data aggregation for max ${maxJobs} jobs`);
+      console.log(`🚀 Starting job data aggregation for max ${maxJobs} jobs`);
+      console.log(`📝 Configuration:`, {
+        maxJobs,
+        cacheEnabled: !!this.cacheManager?.cacheEnabled,
+        apiUrl: this.apiFetcher?.baseURL
+      });
 
       // Fetch job listings
       const listings = await this.fetchJobListingsWithCache(maxJobs);
       if (!listings || listings.length === 0) {
-        console.warn('No job listings found');
+        console.warn('⚠️ No job listings found - this could indicate API issues');
         return [];
       }
 
-      console.log(`Found ${listings.length} job listings, fetching details...`);
+      console.log(`📝 Found ${listings.length} job listings, starting enrichment process...`);
+      console.log(`🔍 Sample job listing:`, {
+        id: listings[0]?.id,
+        title: listings[0]?.job_title,
+        company: listings[0]?.company_name,
+        city: listings[0]?.city_name
+      });
 
       // Enrich each job with detailed information
       const enrichedJobs = await this.enrichJobListings(listings);
+      console.log(`✨ Enriched ${enrichedJobs.length} jobs with detailed information`);
 
       // Filter and sort jobs
       const filteredJobs = this.filterAndSortJobs(enrichedJobs);
+      console.log(`🎯 After filtering: ${filteredJobs.length} jobs ready for RSS`);
 
-      console.log(`Successfully aggregated ${filteredJobs.length} enriched jobs`);
+      if (filteredJobs.length > 0) {
+        console.log(`📋 Sample enriched job:`, {
+          id: filteredJobs[0]?.id,
+          title: filteredJobs[0]?.title,
+          company: filteredJobs[0]?.company_name,
+          hasDescription: !!filteredJobs[0]?.detail?.description,
+          salary: filteredJobs[0]?.salary_range
+        });
+      }
+
+      console.log(`🎉 Successfully aggregated ${filteredJobs.length} enriched jobs`);
       return filteredJobs;
 
     } catch (error) {
-      console.error('Job data aggregation failed:', error);
+      console.error('💥 Job data aggregation failed:', error);
+      console.error('📍 Stack trace:', error.stack);
       throw new Error(`Failed to aggregate job data: ${error.message}`);
     }
   }
@@ -60,26 +84,46 @@ export class DataAggregator {
    */
   async fetchJobListingsWithCache(limit) {
     const cacheKey = `job_listings_${limit}`;
+    console.log(`🔍 Fetching job listings with limit=${limit}, cacheKey=${cacheKey}`);
 
     // Try to get from cache first
     const cached = await this.cacheManager.get(cacheKey, 'job_listings');
     if (cached) {
-      console.log('Job listings served from cache');
+      console.log(`✅ Job listings served from cache: ${cached.data?.length || 0} items`);
       return cached.data || [];
     }
 
+    console.log(`🌐 Cache miss, fetching fresh data from API...`);
     // Fetch fresh data
     const response = await this.apiFetcher.fetchJobListings(1, limit);
 
+    console.log(`📊 API response received:`, {
+      hasData: !!response.data,
+      dataType: typeof response.data,
+      isArray: Array.isArray(response.data),
+      dataLength: response.data?.length,
+      responseKeys: Object.keys(response)
+    });
+
     if (!response.data || !Array.isArray(response.data)) {
-      console.warn('Invalid job listings response format');
+      console.error(`❌ Invalid job listings response format. Expected array, got:`, {
+        data: response.data,
+        type: typeof response.data,
+        isArray: Array.isArray(response.data)
+      });
       return [];
     }
 
     const listings = response.data;
+    console.log(`📋 Retrieved ${listings.length} job listings from API`);
 
     // Cache the result
-    await this.cacheManager.set(cacheKey, { data: listings }, 'job_listings');
+    try {
+      await this.cacheManager.set(cacheKey, { data: listings }, 'job_listings');
+      console.log(`💾 Cached ${listings.length} job listings successfully`);
+    } catch (cacheError) {
+      console.warn(`⚠️ Failed to cache job listings:`, cacheError.message);
+    }
 
     return listings;
   }

@@ -268,6 +268,58 @@ export const CONTENT_FORMATTING = {
 };
 
 /**
+ * Environment detection utility
+ * @returns {string} Detected environment
+ */
+function detectEnvironment() {
+  // Check if running in Cloudflare Workers production
+  if (typeof globalThis !== 'undefined' && globalThis.ASSETS) {
+    // Cloudflare Workers environment
+    if (globalThis.ENVIRONMENT === 'production') {
+      return 'production';
+    }
+    return 'staging';
+  }
+
+  // Check hostname for environment detection
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    if (hostname.includes('workers.dev') || hostname.includes('tekipik.workers.dev')) {
+      return 'production';
+    }
+  }
+
+  // Check if we have production bindings
+  if (globalThis.RSS_CACHE && globalThis.RSS_ANALYTICS) {
+    return 'production';
+  }
+
+  // Default to development
+  return 'development';
+}
+
+/**
+ * Detect production base URL dynamically
+ * @returns {string|null} Production base URL or null
+ */
+function detectProductionBaseUrl() {
+  // Check if running in Cloudflare Workers with request context
+  if (typeof globalThis !== 'undefined' && globalThis.request) {
+    try {
+      const url = new URL(globalThis.request.url);
+      if (url.hostname.includes('workers.dev') || url.hostname.includes('tekipik.workers.dev')) {
+        return `${url.protocol}//${url.host}`;
+      }
+    } catch (e) {
+      // Ignore URL parsing errors
+    }
+  }
+
+  // Default production URL for known workers
+  return 'https://karirhub-rss.tekipik.workers.dev';
+}
+
+/**
  * Error messages configuration
  */
 export const ERROR_MESSAGES = {
@@ -286,12 +338,17 @@ export const ERROR_MESSAGES = {
  * @returns {Object} Environment-specific configuration
  */
 export function getConfig() {
-  const environment = globalThis.ENVIRONMENT || 'development';
+  // Prioritize environment variable from wrangler.toml, fallback to detection
+  const environment = globalThis.ENVIRONMENT || detectEnvironment();
+
+  // Detect production URL dynamically
+  const productionBaseUrl = detectProductionBaseUrl();
 
   // Override with environment variables from Cloudflare Workers
   const config = {
     ...ENVIRONMENTS[environment],
     API_BASE_URL: globalThis.API_BASE_URL || ENVIRONMENTS[environment].API_BASE_URL,
+    BASE_URL: globalThis.BASE_URL || productionBaseUrl || ENVIRONMENTS[environment].BASE_URL,
     CACHE_TTL: parseInt(globalThis.CACHE_TTL) || ENVIRONMENTS[environment].CACHE_TTL,
     MAX_JOBS_PER_FEED: parseInt(globalThis.MAX_JOBS_PER_FEED) || ENVIRONMENTS[environment].MAX_JOBS_PER_FEED,
     RSS_TITLE: globalThis.RSS_TITLE || ENVIRONMENTS[environment].RSS_TITLE,

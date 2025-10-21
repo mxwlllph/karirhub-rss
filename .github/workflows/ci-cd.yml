@@ -62,19 +62,14 @@ jobs:
     - name: Fix security vulnerabilities
       run: npm run audit:fix
 
-    - name: Deploy to Cloudflare Pages (Preview)
-      uses: cloudflare/pages-action@v1
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: karirhub-rss
-        directory: .
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+    - name: Deploy to Cloudflare Workers (Preview)
+      run: |
+        npx wrangler deploy --env preview
 
     - name: Health check staging
       run: |
         sleep 10
-        curl -f https://karirhub-rss.pages.dev/health || exit 1
+        curl -f https://karirhub-rss-staging.tekipik.workers.dev/health || exit 1
         echo "Staging deployment health check passed"
 
   deploy-production:
@@ -100,29 +95,23 @@ jobs:
     - name: Fix security vulnerabilities
       run: npm run audit:fix
 
-    - name: Deploy to Cloudflare Pages (Production)
-      uses: cloudflare/pages-action@v1
-      with:
-        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        projectName: karirhub-rss
-        directory: .
-        gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-        deployment-trigger: push
+    - name: Deploy to Cloudflare Workers (Production)
+      run: |
+        npx wrangler deploy
 
     - name: Health check production
       run: |
         sleep 10
-        curl -f https://karirhub-rss.pages.dev/health || exit 1
+        curl -f https://karirhub-rss.tekipik.workers.dev/health || exit 1
         echo "Production deployment health check passed"
 
     - name: Update deployment status
       if: success()
       run: |
         echo "🎉 Production deployment successful!"
-        echo "RSS Feed: https://karirhub-rss.pages.dev/rss"
-        echo "JSON Feed: https://karirhub-rss.pages.dev/json"
-        echo "Health: https://karirhub-rss.pages.dev/health"
+        echo "RSS Feed: https://karirhub-rss.tekipik.workers.dev/rss"
+        echo "JSON Feed: https://karirhub-rss.tekipik.workers.dev/json"
+        echo "Health: https://karirhub-rss.tekipik.workers.dev/health"
 
   security-scan:
     name: Security Scan

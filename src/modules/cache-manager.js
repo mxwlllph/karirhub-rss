@@ -18,8 +18,14 @@ export class CacheManager {
     if (!kvStore) {
       console.warn('CacheManager: No KV store provided - caching will be disabled');
       this.kvStore = null;
+      this.cacheEnabled = false;
+    } else if (typeof kvStore.get !== 'function' || typeof kvStore.put !== 'function') {
+      console.warn('CacheManager: Invalid KV store provided - caching will be disabled');
+      this.kvStore = null;
+      this.cacheEnabled = false;
     } else {
       this.kvStore = kvStore;
+      this.cacheEnabled = true;
     }
     this.defaultTTL = CONFIG.CACHE_TTL;
     this.cacheStats = {
@@ -338,6 +344,15 @@ export class CacheManager {
    * @returns {Promise<Object>} - Health check result
    */
   async healthCheck() {
+    if (!this.cacheEnabled || !this.kvStore) {
+      return {
+        healthy: false,
+        message: 'Cache is disabled or KV store not available',
+        enabled: false,
+        timestamp: new Date().toISOString()
+      };
+    }
+
     try {
       const testKey = 'health_check_test';
       const testData = { test: true, timestamp: Date.now() };
