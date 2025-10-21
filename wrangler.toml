@@ -7,6 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "production"
 API_BASE_URL = "https://api.kemnaker.go.id/karirhub/catalogue/v1"
+BASE_URL = "https://karirhub-rss.tekipik.workers.dev"
 CACHE_TTL = "3600"  # 1 hour cache for free plan efficiency
 MAX_JOBS_PER_FEED = "30"  # Optimized for free plan
 RSS_TITLE = "Lowongan Kerja Terbaru - KarirHub Indonesia"

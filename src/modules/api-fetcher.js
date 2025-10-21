@@ -86,19 +86,34 @@ export class APIFetcher {
       try {
         const responseText = await response.text();
 
-        // Log first few characters to debug encoding issues
-        if (responseText.length > 0) {
-          const firstChars = responseText.substring(0, 100);
-          console.log(`API response preview: ${firstChars}`);
+        // Log response info for debugging (only in development or when verbose)
+        if (CONFIG.LOG_LEVEL === 'debug' || responseText.length === 0) {
+          console.log(`API response from ${url}: status=${response.status}, length=${responseText.length}`);
+          if (responseText.length > 0) {
+            const firstChars = responseText.substring(0, 200);
+            console.log(`API response preview: ${firstChars}`);
+          }
+        }
+
+        if (!responseText.trim()) {
+          throw new Error('Empty response from API');
         }
 
         data = JSON.parse(responseText);
       } catch (parseError) {
+        console.error(`Failed to parse API response from ${url}:`, parseError.message);
         throw new Error(`Invalid JSON response: ${parseError.message}`);
       }
 
       // Validate response structure
       if (!this.validateResponse(data)) {
+        console.error(`API response validation failed for ${url}:`, {
+          dataType: typeof data,
+          hasData: !!data.data,
+          hasMeta: !!data.meta,
+          hasCode: data.code !== undefined,
+          keys: data ? Object.keys(data) : 'null'
+        });
         throw new Error('Invalid API response structure');
       }
 
@@ -154,17 +169,36 @@ export class APIFetcher {
       return false;
     }
 
-    // Check for status code
-    if (data.code === undefined) {
-      return false;
+    // Handle KarirHub API structure: {meta: {...}, links: {...}, data: [...]}
+    // or error structure with code field
+    if (data.code !== undefined) {
+      // Handle API error responses
+      if (data.code !== 200 && data.message) {
+        throw new Error(`API Error (${data.code}): ${data.message}`);
+      }
+      return true;
     }
 
-    // If there's an error in the response, throw it
-    if (data.code !== 200 && data.message) {
-      throw new Error(`API Error (${data.code}): ${data.message}`);
+    // Handle KarirHub API success response structure
+    if (data.data && Array.isArray(data.data)) {
+      // This is the expected KarirHub API response structure
+      return true;
     }
 
-    return true;
+    // If we have meta object, it's likely a valid KarirHub response
+    if (data.meta && typeof data.meta === 'object') {
+      return true;
+    }
+
+    // None of the expected structures found
+    console.error('Unexpected API response structure:', {
+      hasCode: data.code !== undefined,
+      hasData: !!data.data,
+      hasMeta: !!data.meta,
+      keys: Object.keys(data)
+    });
+
+    return false;
   }
 
   /**

@@ -26,7 +26,7 @@ const BASE_CONFIG = {
   RSS_COPYRIGHT: `© ${new Date().getFullYear()} Kementerian Ketenagakerjaan Indonesia`,
 
   // Service URLs
-  BASE_URL: 'https://rss.yourdomain.com',
+  BASE_URL: 'https://karirhub-rss.tekipik.workers.dev',
 
   // Social Media Configuration
   SOCIAL_MEDIA_HASHTAGS: ['#lowongankerja', '#karir', '#loker'],
@@ -83,7 +83,7 @@ const ENVIRONMENTS = {
     LOG_LEVEL: 'warn',
     CACHE_TTL: 1800, // 30 minutes
     MAX_JOBS_PER_FEED: 50,
-    BASE_URL: 'https://rss.yourdomain.com',
+    BASE_URL: 'https://karirhub-rss.tekipik.workers.dev',
   }
 };
 
