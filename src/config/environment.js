@@ -229,12 +229,12 @@ export const HASHTAG_CONFIG = {
   functionPrefix: '#',
   maxHashtags: 8,
   customHashtags: {
-    'automotive': #otomotif',
-    'technology': #teknologi,
-    'healthcare': #kesehatan,
-    'education': #pendidikan,
-    'finance': #keuangan,
-    'manufacturing': #manufaktur
+    'automotive': '#otomotif',
+    'technology': '#teknologi',
+    'healthcare': '#kesehatan',
+    'education': '#pendidikan',
+    'finance': '#keuangan',
+    'manufacturing': '#manufaktur'
   }
 };
 
