@@ -17,17 +17,17 @@ RSS_GENERATOR = "Cloudflare Worker RSS Generator v1.0"
 ENABLE_ANALYTICS = "true"
 LOG_LEVEL = "info"
 
-# KV namespace for caching (to be created)
+# KV namespace for caching
 [[kv_namespaces]]
 binding = "RSS_CACHE"
-id = "RSS_CACHE_ID"  # Replace with actual ID after: wrangler kv:namespace create "RSS_CACHE"
-preview_id = "RSS_CACHE_PREVIEW_ID"  # Replace with actual ID after: wrangler kv:namespace create "RSS_CACHE" --preview
+id = "2e55b61a8a1343909bfa224f157b037c"
+preview_id = "2e55b61a8a1343909bfa224f157b037c"  # Using production ID for preview
 
-# D1 database for analytics (to be created)
+# D1 database for analytics
 [[d1_databases]]
 binding = "RSS_ANALYTICS"
 database_name = "karirhub-rss-analytics"
-database_id = "RSS_ANALYTICS_ID"  # Replace with actual ID after: wrangler d1 create "karirhub-rss-analytics"
+database_id = "5b114d74-8490-4cfa-a5dc-f2c2a142f686"
 
 # Production environment
 [env.production]
