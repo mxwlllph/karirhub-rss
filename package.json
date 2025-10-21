@@ -43,9 +43,8 @@
   },
   "homepage": "https://github.com/mxwlllph/karirhub-rss#readme",
   "devDependencies": {
-    "wrangler": "^3.114.15"
+    "wrangler": "^4.43.0"
   },
-  "dependencies": {},
   "engines": {
     "node": ">=18.0.0"
   }

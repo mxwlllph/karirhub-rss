@@ -15,7 +15,12 @@ export class CacheManager {
    * @param {Object} kvStore - Cloudflare KV store instance
    */
   constructor(kvStore) {
-    this.kvStore = kvStore;
+    if (!kvStore) {
+      console.warn('CacheManager: No KV store provided - caching will be disabled');
+      this.kvStore = null;
+    } else {
+      this.kvStore = kvStore;
+    }
     this.defaultTTL = CONFIG.CACHE_TTL;
     this.cacheStats = {
       hits: 0,
@@ -32,6 +37,11 @@ export class CacheManager {
    * @returns {Promise<any>} - Cached data or null
    */
   async get(key, type = 'default') {
+    if (!this.kvStore) {
+      this.cacheStats.misses++;
+      return null;
+    }
+
     try {
       const cacheKey = this.buildCacheKey(key, type);
       const cached = await this.kvStore.get(cacheKey, 'json');
@@ -69,6 +79,11 @@ export class CacheManager {
    * @returns {Promise<boolean>} - True if successful
    */
   async set(key, data, type = 'default', customTTL = null) {
+    if (!this.kvStore) {
+      console.warn(`Cache disabled - skipping set operation for ${key}`);
+      return false;
+    }
+
     try {
       const cacheKey = this.buildCacheKey(key, type);
       const ttl = customTTL || CACHE_STRATEGY[type] || this.defaultTTL;

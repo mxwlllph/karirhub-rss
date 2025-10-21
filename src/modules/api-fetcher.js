@@ -19,7 +19,7 @@ export class APIFetcher {
     this.defaultHeaders = {
       'User-Agent': CONFIG.RSS_GENERATOR,
       'Accept': 'application/json',
-      'Accept-Encoding': 'gzip, deflate, br',
+      'Accept-Encoding': 'identity', // Avoid compression
       'Connection': 'keep-alive'
     };
   }
@@ -81,7 +81,21 @@ export class APIFetcher {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      // Handle response body with better error handling
+      let data;
+      try {
+        const responseText = await response.text();
+
+        // Log first few characters to debug encoding issues
+        if (responseText.length > 0) {
+          const firstChars = responseText.substring(0, 100);
+          console.log(`API response preview: ${firstChars}`);
+        }
+
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${parseError.message}`);
+      }
 
       // Validate response structure
       if (!this.validateResponse(data)) {

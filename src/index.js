@@ -93,12 +93,12 @@ async function handleRSSFeed(request, startTime) {
   try {
     logInfo('Generating RSS feed');
 
-    // Initialize components
-    const cacheManager = new CacheManager(RSS_CACHE);
+    // Initialize components with fallback handling
+    const cacheManager = new CacheManager(globalThis.RSS_CACHE || null);
     const apiFetcher = new APIFetcher(CONFIG.API_BASE_URL);
     const dataAggregator = new DataAggregator(apiFetcher, cacheManager);
     const rssGenerator = new RSSGenerator();
-    const analytics = new Analytics(RSS_ANALYTICS);
+    const analytics = new Analytics(globalThis.RSS_ANALYTICS, globalThis.RSS_CACHE || null);
 
     // Check cache first
     const cacheKey = 'rss_feed_main';
@@ -170,10 +170,11 @@ async function handleJSONFeed(request, startTime) {
   try {
     logInfo('Generating JSON feed');
 
-    const cacheManager = new CacheManager(RSS_CACHE);
+    // Initialize components with fallback handling
+    const cacheManager = new CacheManager(globalThis.RSS_CACHE || null);
     const apiFetcher = new APIFetcher(CONFIG.API_BASE_URL);
     const dataAggregator = new DataAggregator(apiFetcher, cacheManager);
-    const analytics = new Analytics(RSS_ANALYTICS);
+    const analytics = new Analytics(globalThis.RSS_ANALYTICS, globalThis.RSS_CACHE || null);
 
     // Check cache
     const cacheKey = 'json_feed_main';
@@ -231,7 +232,8 @@ async function handleJSONFeed(request, startTime) {
  */
 async function handleHealthCheck() {
   try {
-    const cacheManager = new CacheManager(RSS_CACHE);
+    // Initialize components with fallback handling
+    const cacheManager = new CacheManager(globalThis.RSS_CACHE || null);
     const apiFetcher = new APIFetcher(CONFIG.API_BASE_URL);
 
     // Check API connectivity
@@ -292,7 +294,18 @@ async function handleHealthCheck() {
  */
 async function handleStats() {
   try {
-    const analytics = new Analytics(RSS_ANALYTICS);
+    // Check if analytics binding is available
+    if (!globalThis.RSS_ANALYTICS) {
+      return new Response(JSON.stringify({
+        error: 'Analytics unavailable',
+        message: 'RSS_ANALYTICS binding not found'
+      }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const analytics = new Analytics(globalThis.RSS_ANALYTICS, globalThis.RSS_CACHE || null);
     const stats = await analytics.getStats();
 
     return new Response(JSON.stringify(stats, null, 2), {
