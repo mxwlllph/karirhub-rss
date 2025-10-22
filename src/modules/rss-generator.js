@@ -258,9 +258,10 @@ export class RSSGenerator {
     if (job.detail) {
       // Job type
       if (job.detail.job_type) {
+        const formattedJobType = this.formatJobType(job.detail.job_type);
         content += `<div class="job-type">
           <h3>Tipe Pekerjaan:</h3>
-          <p>${this.escapeXML(job.detail.job_type)}</p>
+          <p>${this.escapeXML(formattedJobType)}</p>
         </div>`;
       }
 
@@ -610,8 +611,49 @@ export class RSSGenerator {
   }
 
   /**
+   * Format job type for display
+   * @param {Object|string} jobType - Job type object or string
+   * @returns {string} - Formatted job type
+   */
+  formatJobType(jobType) {
+    if (!jobType) return 'Full-time';
+
+    // Handle string job types
+    if (typeof jobType === 'string') {
+      return jobType;
+    }
+
+    // Handle object job types with various field names
+    if (typeof jobType === 'object') {
+      // Try different possible field names
+      const possibleFields = ['name', 'title', 'label', 'job_type_name', 'type'];
+      for (const field of possibleFields) {
+        if (jobType[field] && typeof jobType[field] === 'string') {
+          return jobType[field];
+        }
+      }
+
+      // If object has string representation
+      if (jobType.toString && jobType.toString() !== '[object Object]') {
+        return jobType.toString();
+      }
+
+      // Last resort: JSON stringify for debugging
+      console.warn('Unexpected job_type object structure:', jobType);
+      return 'Full-time';
+    }
+
+    // Handle other types (numbers, etc.)
+    if (typeof jobType !== 'object') {
+      return String(jobType);
+    }
+
+    return 'Full-time';
+  }
+
+  /**
    * Format publication date
-   * @param {string} dateString - ISO date string
+   * @param {string} dateString - Date string in various formats (ISO, MySQL datetime, etc.)
    * @returns {string} - RFC 822 formatted date
    */
   formatPubDate(dateString) {
@@ -620,10 +662,29 @@ export class RSSGenerator {
     }
 
     try {
-      const date = new Date(dateString);
+      let date;
+
+      // Handle MySQL datetime format: "2025-10-21 20:16:32"
+      if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+        // MySQL datetime format - treat as UTC
+        const [datePart, timePart] = dateString.split(' ');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes, seconds] = timePart.split(':').map(Number);
+        date = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+      } else {
+        // Try standard Date constructor for ISO and other formats
+        date = new Date(dateString);
+      }
+
+      // Validate date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date after parsing:', dateString);
+        return this.currentDate;
+      }
+
       return date.toUTCString();
     } catch (error) {
-      console.warn('Invalid date format:', dateString);
+      console.warn('Error formatting date:', dateString, error);
       return this.currentDate;
     }
   }

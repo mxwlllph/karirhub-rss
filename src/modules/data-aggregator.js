@@ -323,12 +323,34 @@ export class DataAggregator {
   formatJobType(jobType) {
     if (!jobType) return 'Full-time';
 
+    // Handle string job types
     if (typeof jobType === 'string') {
       return jobType;
     }
 
-    if (typeof jobType === 'object' && jobType.name) {
-      return jobType.name;
+    // Handle object job types with various field names
+    if (typeof jobType === 'object') {
+      // Try different possible field names
+      const possibleFields = ['name', 'title', 'label', 'job_type_name', 'type'];
+      for (const field of possibleFields) {
+        if (jobType[field] && typeof jobType[field] === 'string') {
+          return jobType[field];
+        }
+      }
+
+      // If object has string representation
+      if (jobType.toString && jobType.toString() !== '[object Object]') {
+        return jobType.toString();
+      }
+
+      // Last resort: JSON stringify for debugging
+      console.warn('Unexpected job_type object structure:', jobType);
+      return 'Full-time';
+    }
+
+    // Handle other types (numbers, etc.)
+    if (typeof jobType !== 'object') {
+      return String(jobType);
     }
 
     return 'Full-time';
@@ -426,7 +448,7 @@ export class DataAggregator {
   generateSocialMediaContent(job, detail) {
     const location = job.city_name || 'Indonesia';
     const salary = detail?.salary ? this.formatSalaryRange(detail.salary) : 'Gaji nego';
-    const jobType = detail?.job_type || 'Full-time';
+    const jobType = this.formatJobType(detail?.job_type) || 'Full-time';
     const education = detail?.requirements?.education_min || 'Tidak disebutkan';
     const industry = job.industry_name || 'General';
 

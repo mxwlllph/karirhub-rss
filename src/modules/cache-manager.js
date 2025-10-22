@@ -15,6 +15,16 @@ export class CacheManager {
    * @param {Object} kvStore - Cloudflare KV store instance
    */
   constructor(kvStore) {
+    // Enhanced debugging for KV binding issues
+    console.log('CacheManager: Initializing with KV store:', {
+      kvStoreProvided: !!kvStore,
+      kvStoreType: typeof kvStore,
+      globalBindingAvailable: !!globalThis.RSS_CACHE,
+      globalBindingType: typeof globalThis.RSS_CACHE,
+      hasGetMethod: kvStore && typeof kvStore.get === 'function',
+      hasPutMethod: kvStore && typeof kvStore.put === 'function'
+    });
+
     if (!kvStore) {
       console.warn('CacheManager: No KV store provided - caching will be disabled');
       this.kvStore = null;
@@ -26,6 +36,7 @@ export class CacheManager {
     } else {
       this.kvStore = kvStore;
       this.cacheEnabled = true;
+      console.log('CacheManager: Successfully initialized with KV store');
     }
     this.defaultTTL = CONFIG.CACHE_TTL;
     this.cacheStats = {
@@ -344,11 +355,19 @@ export class CacheManager {
    * @returns {Promise<Object>} - Health check result
    */
   async healthCheck() {
+    // Check if KV binding is available in global scope
+    const globalKVBinding = globalThis.RSS_CACHE;
+    const localKVStore = this.kvStore;
+
     if (!this.cacheEnabled || !this.kvStore) {
       return {
         healthy: false,
         message: 'Cache is disabled or KV store not available',
         enabled: false,
+        kvBindingAvailable: !!globalKVBinding,
+        kvStoreAvailable: !!localKVStore,
+        kvBindingType: typeof globalKVBinding,
+        kvStoreType: typeof localKVStore,
         timestamp: new Date().toISOString()
       };
     }
