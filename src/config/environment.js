@@ -136,14 +136,16 @@ export const HTTP_HEADERS = {
  */
 export const RSS_FIELD_MAPPING = {
   title: {
-    maxLength: 100,
-    prefix: '🔥 ',
-    template: '{emoji} Lowongan {title} di {company} - {location}'
+    maxLength: 150,
+    prefix: '💰 ',
+    template: '{salary} • {title} • {company} • {age_range} 🔥'
   },
   description: {
-    maxLength: 300,
-    template: '{salary} • {job_type} • {industry} • {education}',
-    hashtags: true
+    maxLength: 400,
+    template: '{salary} • {experience_level} • {location} • {inclusive_workplace}',
+    hashtags: true,
+    include_benefits: true,
+    include_deadline_urgency: true
   },
   content: {
     includeCompanyInfo: true,

@@ -183,6 +183,9 @@ export class DataAggregator {
       // Fetch job details
       const jobDetail = await this.fetchJobDetailWithCache(job.id);
 
+      // Prepare requirements data
+      const requirements = jobDetail?.requirements || {};
+
       // Merge basic and detailed information
       const enrichedJob = {
         ...job,
@@ -198,6 +201,14 @@ export class DataAggregator {
         content_html: this.generateFullContent(job, jobDetail),
         application_deadline_formatted: this.formatDeadline(jobDetail?.application_deadline),
         posted_date_formatted: this.formatDate(job.created_at || job.published_at || jobDetail?.posted_date),
+
+        // Enhanced SEO fields
+        requirements_info: this.formatRequirementsForSEO(requirements),
+        age_range: this.formatAgeRange(requirements),
+        experience_level: this.formatExperienceLevel(requirements),
+        inclusive_workplace: this.isInclusiveWorkplace(requirements),
+        education_level: requirements.education_min || 'Pendidikan variatif',
+
         // Add new date fields
         published_at: job.published_at || job.created_at || jobDetail?.posted_date,
         expires_at: job.expires_at || jobDetail?.expires_at,
@@ -274,26 +285,171 @@ export class DataAggregator {
   }
 
   /**
-   * Format salary range for display
+   * Format salary range for SEO optimization
    * @param {Object} salary - Salary object
    * @returns {string} - Formatted salary range
    */
   formatSalaryRange(salary) {
     if (!salary || typeof salary !== 'object') {
-      return 'Gaji nego';
+      return 'Gaji Kompetitif';
     }
 
-    const formatter = new Intl.NumberFormat('id-ID', CONTENT_FORMATTING.currency);
+    // Check if salary should be shown
+    if (salary.show_salary === false) {
+      return 'Gaji Kompetitif';
+    }
 
+    const formatter = new Intl.NumberFormat('id-ID');
+
+    // Handle new API structure: min_salary, max_salary objects
+    if (salary.min_salary && salary.max_salary) {
+      const minAmount = salary.min_salary.amount;
+      const maxAmount = salary.max_salary.amount;
+
+      // Convert to millions for better readability
+      const minMillions = Math.round(minAmount / 1000000);
+      const maxMillions = Math.round(maxAmount / 1000000);
+
+      return `Rp${minMillions}-${maxMillions} Juta/bulan`;
+    }
+
+    // Handle single min_salary object
+    if (salary.min_salary && !salary.max_salary) {
+      const minAmount = salary.min_salary.amount;
+      const minMillions = Math.round(minAmount / 1000000);
+      return `Rp${minMillions}+ Juta/bulan`;
+    }
+
+    // Handle single max_salary object
+    if (!salary.min_salary && salary.max_salary) {
+      const maxAmount = salary.max_salary.amount;
+      const maxMillions = Math.round(maxAmount / 1000000);
+      return `Hingga Rp${maxMillions} Juta/bulan`;
+    }
+
+    // Fallback to old structure for backward compatibility
     if (salary.min && salary.max) {
-      return `${formatter.format(salary.min)} - ${formatter.format(salary.max)}`;
+      const minMillions = Math.round(salary.min / 1000000);
+      const maxMillions = Math.round(salary.max / 1000000);
+      return `Rp${minMillions}-${maxMillions} Juta/bulan`;
     } else if (salary.min) {
-      return `${formatter.format(salary.min)}+`;
+      const minMillions = Math.round(salary.min / 1000000);
+      return `Rp${minMillions}+ Juta/bulan`;
     } else if (salary.max) {
-      return `Hingga ${formatter.format(salary.max)}`;
+      const maxMillions = Math.round(salary.max / 1000000);
+      return `Hingga Rp${maxMillions} Juta/bulan`;
     }
 
-    return 'Gaji nego';
+    return 'Gaji Kompetitif';
+  }
+
+  /**
+   * Format requirements for SEO optimization
+   * @param {Object} requirements - Requirements object
+   * @returns {string} - Formatted requirements information
+   */
+  formatRequirementsForSEO(requirements) {
+    if (!requirements || typeof requirements !== 'object') {
+      return '';
+    }
+
+    const elements = [];
+
+    // Age range with attractive formatting
+    if (requirements.min_age && requirements.max_age) {
+      elements.push(`👥 ${requirements.min_age}-${requirements.max_age} tahun`);
+    } else if (requirements.min_age) {
+      elements.push(`👥 ${requirements.min_age}+ tahun`);
+    } else if (requirements.max_age) {
+      elements.push(`👥 Maks ${requirements.max_age} tahun`);
+    }
+
+    // Experience level
+    if (!requirements.min_year_experience || requirements.min_year_experience === 0) {
+      elements.push(`🚫 Fresh Graduate Welcome`);
+    } else if (requirements.min_year_experience === 1) {
+      elements.push(`🚫 1+ tahun pengalaman`);
+    } else if (requirements.min_year_experience) {
+      elements.push(`🚫 ${requirements.min_year_experience}+ tahun pengalaman`);
+    }
+
+    // Inclusivity indicators
+    if (requirements.physical_condition === 'disabled') {
+      elements.push(`♿ Disabilitas-Friendly`);
+    }
+
+    // Equal opportunity
+    if (!requirements.gender && !requirements.marital_status) {
+      elements.push(`🌈 Equal Opportunity`);
+    } else if (!requirements.gender) {
+      elements.push(`🌈 Gender Neutral`);
+    }
+
+    // Education level
+    if (requirements.education_min) {
+      elements.push(`🎓 ${requirements.education_min}`);
+    }
+
+    // Physical requirements
+    if (requirements.physical_condition && requirements.physical_condition !== 'disabled') {
+      elements.push(`💪 ${requirements.physical_condition}`);
+    }
+
+    return elements.join(' • ');
+  }
+
+  /**
+   * Format age range for display
+   * @param {Object} requirements - Requirements object
+   * @returns {string} - Formatted age range
+   */
+  formatAgeRange(requirements) {
+    if (!requirements) return 'Usia bebas';
+
+    if (requirements.min_age && requirements.max_age) {
+      return `${requirements.min_age}-${requirements.max_age} tahun`;
+    } else if (requirements.min_age) {
+      return `${requirements.min_age}+ tahun`;
+    } else if (requirements.max_age) {
+      return `Maks ${requirements.max_age} tahun`;
+    }
+
+    return 'Usia bebas';
+  }
+
+  /**
+   * Format experience level for display
+   * @param {Object} requirements - Requirements object
+   * @returns {string} - Formatted experience level
+   */
+  formatExperienceLevel(requirements) {
+    if (!requirements) return 'Pengalaman dibutuhkan';
+
+    if (!requirements.min_year_experience || requirements.min_year_experience === 0) {
+      return 'Fresh Graduate Welcome';
+    } else if (requirements.min_year_experience === 1) {
+      return '1+ tahun pengalaman';
+    } else if (requirements.min_year_experience) {
+      return `${requirements.min_year_experience}+ tahun pengalaman`;
+    }
+
+    return 'Pengalaman dibutuhkan';
+  }
+
+  /**
+   * Check if workplace is inclusive
+   * @param {Object} requirements - Requirements object
+   * @returns {boolean} - True if inclusive workplace
+   */
+  isInclusiveWorkplace(requirements) {
+    if (!requirements) return false;
+
+    // Check for various inclusivity indicators
+    const hasDisabilityFriendly = requirements.physical_condition === 'disabled';
+    const hasEqualOpportunity = !requirements.gender && !requirements.marital_status;
+    const hasGenderNeutral = !requirements.gender;
+
+    return hasDisabilityFriendly || hasEqualOpportunity || hasGenderNeutral;
   }
 
   /**

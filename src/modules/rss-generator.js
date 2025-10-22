@@ -186,34 +186,45 @@ export class RSSGenerator {
     const template = RSS_FIELD_MAPPING.description.template;
     const includeHashtags = RSS_FIELD_MAPPING.description.hashtags;
 
-    // Gather data
-    const salary = job.salary_range || 'Gaji nego';
-    const jobType = job.job_type_name || job.detail?.job_type_name || 'Full-time';
-    const industry = job.industry_name || 'General';
-    const education = job.detail?.requirements?.education_min || 'Pendidikan variatif';
+    // Gather enhanced data
+    const salary = job.salary_range || 'Gaji Kompetitif';
+    const experienceLevel = job.experience_level || 'Pengalaman dibutuhkan';
+    const location = job.city_name || 'Indonesia';
+    const inclusiveWorkplace = job.inclusive_workplace ? '♿ Disabilitas-Friendly' : '';
 
     // Apply template
     let description = template
       .replace('{salary}', salary)
-      .replace('{job_type}', jobType)
-      .replace('{industry}', industry)
-      .replace('{education}', education);
+      .replace('{experience_level}', experienceLevel)
+      .replace('{location}', location)
+      .replace('{inclusive_workplace}', inclusiveWorkplace);
+
+    // Add benefits if enabled
+    if (RSS_FIELD_MAPPING.description.include_benefits) {
+      const benefits = this.formatJobBenefits(job);
+      if (benefits) {
+        description += '\n📋 **Benefit:** ' + benefits;
+      }
+    }
 
     // Add hashtags if enabled
     if (includeHashtags) {
-      const hashtags = this.generateItemHashtags(job);
+      const hashtags = this.generateEnhancedHashtags(job);
       description += '\n\n' + hashtags;
     }
 
-    // Add call-to-action and engagement elements
-    if (job.days_until_expiry !== null && job.days_until_expiry <= 7) {
-      description += '\n\n⏰ Deadline: ' + job.days_until_expiry + ' hari lagi! Apply sekarang!';
-    } else {
-      description += '\n\n📌 Apply now: ' + job.frontend_url;
+    // Add deadline urgency if enabled
+    if (RSS_FIELD_MAPPING.description.include_deadline_urgency) {
+      if (job.days_until_expiry !== null && job.days_until_expiry <= 3) {
+        description += '\n\n⏰ **Deadline ' + job.days_until_expiry + ' hari lagi!**';
+      } else if (job.days_until_expiry !== null && job.days_until_expiry <= 7) {
+        description += '\n\n⏰ Deadline: ' + job.days_until_expiry + ' hari lagi';
+      }
     }
 
-    // Add engagement prompt
-    description += '\n💡 Share dengan teman yang cocok untuk posisi ini!';
+    // Add call-to-action
+    description += '\n\n🔗 **Apply Link:** ' + job.frontend_url;
+    description += '\n💡 **Share:** Bantu teman yang mencari kesempatan emas ini!';
 
     // Truncate if too long
     if (description.length > maxLength) {
@@ -865,6 +876,130 @@ export class RSSGenerator {
     stats.averageTitleLength = Math.round(totalTitleLength / jobs.length);
 
     return stats;
+  }
+
+  /**
+   * Format job benefits for description
+   * @param {Object} job - Job object
+   * @returns {string} - Formatted benefits
+   */
+  formatJobBenefits(job) {
+    const benefits = [];
+
+    // Salary benefits
+    if (job.salary_range && job.salary_range !== 'Gaji Kompetitif') {
+      benefits.push(job.salary_range);
+    }
+
+    // Work type benefits
+    if (job.detail?.job_type?.name === 'Remote') {
+      benefits.push('🏠 Work From Home');
+    }
+
+    // Inclusive workplace benefits
+    if (job.inclusive_workplace) {
+      benefits.push('♿ Inclusive Workplace');
+    }
+
+    // Fresh graduate benefits
+    if (job.experience_level && job.experience_level.includes('Fresh Graduate')) {
+      benefits.push('🚫 No Experience Required');
+    }
+
+    // Age-specific benefits
+    if (job.age_range && job.age_range.includes('21-25')) {
+      benefits.push('👥 Fresh Graduate Friendly');
+    }
+
+    return benefits.length > 0 ? benefits.join(' • ') : null;
+  }
+
+  /**
+   * Generate enhanced hashtags for social media optimization
+   * @param {Object} job - Job object
+   * @returns {string} - Enhanced hashtags
+   */
+  generateEnhancedHashtags(job) {
+    const hashtags = new Set([
+      '#LowonganKerja', '#KarirIndonesia', '#InfoLoker'
+    ]);
+
+    // Job-specific hashtags
+    const title = (job.title || '').toLowerCase();
+    if (title.includes('teacher') || title.includes('guru')) {
+      hashtags.add('#LowonganGuru');
+      hashtags.add('#TeacherJobs');
+      hashtags.add('#EducationJobs');
+    }
+    if (title.includes('biology')) {
+      hashtags.add('#BiologyTeacher');
+      hashtags.add('#ScienceTeacher');
+    }
+    if (title.includes('sales') || title.includes('marketing')) {
+      hashtags.add('#SalesJobs');
+      hashtags.add('#MarketingJobs');
+    }
+
+    // Salary-based hashtags
+    if (job.salary_range && job.salary_range.includes('Juta')) {
+      hashtags.add('#LokerGajiTinggi');
+    }
+
+    // Experience-based hashtags
+    if (job.experience_level) {
+      if (job.experience_level.includes('Fresh Graduate')) {
+        hashtags.add('#FreshGraduate');
+        hashtags.add('#LokerPengalaman');
+      }
+      if (job.experience_level.includes('1+ tahun') || job.experience_level.includes('pengalaman')) {
+        hashtags.add('#ExperiencedHire');
+      }
+    }
+
+    // Inclusive workplace hashtags
+    if (job.inclusive_workplace) {
+      hashtags.add('#InclusiveWorkplace');
+      hashtags.add('#DisabilitasFriendly');
+    }
+
+    // Location-based hashtags
+    if (job.city_name) {
+      const cleanCity = job.city_name.replace(/\s+/g, '');
+      hashtags.add(`#Karir${cleanCity}`);
+      hashtags.add(`#Loker${cleanCity}`);
+    }
+
+    // Education-based hashtags
+    if (job.education_level) {
+      const education = job.education_level.toLowerCase();
+      if (education.includes('s1') || education.includes('sarjana')) {
+        hashtags.add('#LokerS1');
+      }
+      if (education.includes('sma') || education.includes('smk')) {
+        hashtags.add('#LokerSMA');
+      }
+    }
+
+    // Industry-based hashtags
+    if (job.industry_name) {
+      const industry = job.industry_name.toLowerCase();
+      if (industry.includes('education')) {
+        hashtags.add('#EducationJobs');
+      }
+      if (industry.includes('technology') || industry.includes('it')) {
+        hashtags.add('#TechJobs');
+      }
+    }
+
+    // Urgency hashtags
+    if (job.days_until_expiry !== null && job.days_until_expiry <= 3) {
+      hashtags.add('#UrgentLoker');
+      hashtags.add('#LastChance');
+    }
+
+    // Convert to array and limit to 12 hashtags
+    const hashtagArray = Array.from(hashtags).slice(0, 12);
+    return hashtagArray.join(' ');
   }
 }
 
