@@ -137,21 +137,28 @@ export class DataAggregator {
     const enrichedJobs = [];
     const batchSize = 5; // Process in batches to control API load
 
+    console.log(`✨ Starting enrichment for ${listings.length} job listings`);
+
     for (let i = 0; i < listings.length; i += batchSize) {
       const batch = listings.slice(i, i + batchSize);
+      console.log(`📦 Processing batch ${Math.floor(i/batchSize) + 1} with ${batch.length} jobs`);
 
       const batchPromises = batch.map(job => this.enrichSingleJob(job));
       const batchResults = await Promise.allSettled(batchPromises);
 
       // Process results
       batchResults.forEach((result, index) => {
+        const originalJob = batch[index];
         if (result.status === 'fulfilled' && result.value) {
+          console.log(`✅ Successfully enriched job ${originalJob.id}: ${result.value.title}`);
           enrichedJobs.push(result.value);
         } else {
-          console.warn(`Failed to enrich job ${batch[index]?.id}:`, result.reason);
+          console.warn(`❌ Failed to enrich job ${originalJob?.id}:`, result.reason?.message || result.reason);
           // Add basic job info even if enrichment fails
-          if (batch[index]) {
-            enrichedJobs.push(this.createBasicJobObject(batch[index]));
+          if (originalJob) {
+            const basicJob = this.createBasicJobObject(originalJob);
+            console.log(`🔄 Using basic job object for ${originalJob.id}: ${basicJob.title}`);
+            enrichedJobs.push(basicJob);
           }
         }
       });
@@ -162,6 +169,7 @@ export class DataAggregator {
       }
     }
 
+    console.log(`🎉 Enrichment complete. ${enrichedJobs.length} out of ${listings.length} jobs processed`);
     return enrichedJobs;
   }
 
@@ -178,8 +186,10 @@ export class DataAggregator {
       // Merge basic and detailed information
       const enrichedJob = {
         ...job,
-        detail: jobDetail,
+        // Ensure consistent field naming
+        title: job.title || job.job_title || jobDetail?.title,
         // Add derived fields
+        detail: jobDetail,
         salary_range: this.formatSalaryRange(jobDetail?.salary),
         full_location: this.formatFullLocation(job),
         requirements_text: this.formatRequirements(jobDetail?.requirements),
@@ -187,7 +197,7 @@ export class DataAggregator {
         social_media_content: this.generateSocialMediaContent(job, jobDetail),
         content_html: this.generateFullContent(job, jobDetail),
         application_deadline_formatted: this.formatDeadline(jobDetail?.application_deadline),
-        posted_date_formatted: this.formatDate(job.created_at || jobDetail?.posted_date)
+        posted_date_formatted: this.formatDate(job.created_at || job.published_at || jobDetail?.posted_date)
       };
 
       return enrichedJob;
@@ -235,6 +245,8 @@ export class DataAggregator {
   createBasicJobObject(job) {
     return {
       ...job,
+      // Ensure consistent field naming
+      title: job.title || job.job_title,
       detail: null,
       salary_range: 'Gaji nego',
       full_location: this.formatFullLocation(job),
@@ -243,7 +255,7 @@ export class DataAggregator {
       social_media_content: this.generateBasicSocialMediaContent(job),
       content_html: this.generateBasicContent(job),
       application_deadline_formatted: 'Informasi deadline tidak tersedia',
-      posted_date_formatted: this.formatDate(job.created_at)
+      posted_date_formatted: this.formatDate(job.created_at || job.published_at)
     };
   }
 
@@ -682,20 +694,42 @@ ${hashtags}`;
    * @returns {Array} - Filtered and sorted jobs
    */
   filterAndSortJobs(jobs) {
+    console.log(`🔍 Filtering ${jobs.length} jobs...`);
+
     // Filter out jobs without required fields
-    const filtered = jobs.filter(job => {
-      return job &&
+    const filtered = jobs.filter((job, index) => {
+      const isValid = job &&
              job.id &&
-             job.title &&
+             (job.title || job.job_title) &&  // Handle both field names
              job.company_name &&
-             job.created_at;
+             (job.created_at || job.published_at);  // Handle both date fields
+
+      if (!isValid) {
+        console.warn(`❌ Job ${index} filtered out:`, {
+          hasJob: !!job,
+          hasId: !!job?.id,
+          hasTitle: !!(job?.title || job?.job_title),
+          hasCompany: !!job?.company_name,
+          hasCreated: !!(job?.created_at || job?.published_at),
+          jobKeys: job ? Object.keys(job) : 'null'
+        });
+      }
+
+      return isValid;
     });
+
+    console.log(`✅ Filtered to ${filtered.length} valid jobs`);
 
     // Sort by creation date (newest first)
     filtered.sort((a, b) => {
-      const dateA = new Date(a.created_at);
-      const dateB = new Date(b.created_at);
+      const dateA = new Date(a.created_at || a.published_at);
+      const dateB = new Date(b.created_at || b.published_at);
       return dateB - dateA;
+    });
+
+    console.log(`📊 Final job list ready for RSS generation:`);
+    filtered.slice(0, 3).forEach((job, index) => {
+      console.log(`  ${index + 1}. ${job.title} at ${job.company_name}`);
     });
 
     return filtered;
