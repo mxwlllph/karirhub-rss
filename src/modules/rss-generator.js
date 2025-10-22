@@ -102,7 +102,7 @@ export class RSSGenerator {
       const content = this.generateItemContent(job);
       const link = this.generateItemLink(job);
       const guid = job.id || `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const pubDate = this.formatPubDate(job.created_at);
+      const pubDate = this.formatPubDate(job.published_at || job.created_at);
       const categories = this.generateItemCategories(job);
       const author = this.escapeXML(job.company_name || 'Unknown Company');
       const mediaElements = this.generateMediaElements(job);
@@ -134,7 +134,16 @@ export class RSSGenerator {
     const template = RSS_FIELD_MAPPING.title.template;
     const prefix = RSS_FIELD_MAPPING.title.prefix;
 
-    const emoji = job.detail?.salary ? '💰' : '🔥';
+    // Add urgency indicator
+    let emoji = '🔥';
+    if (job.days_until_expiry !== null && job.days_until_expiry <= 3) {
+      emoji = '⚠️'; // Urgent
+    } else if (job.days_until_expiry !== null && job.days_until_expiry <= 7) {
+      emoji = '📢'; // This week
+    } else if (job.detail?.salary) {
+      emoji = '💰'; // Has salary info
+    }
+
     const location = job.city_name || job.province_name || 'Indonesia';
 
     // Clean and prepare variables
@@ -149,8 +158,13 @@ export class RSSGenerator {
       .replace('{company}', cleanCompany)
       .replace('{location}', cleanLocation);
 
+    // Add urgency indicator for expiring jobs
+    if (job.days_until_expiry !== null && job.days_until_expiry <= 7) {
+      title += ` (${job.days_until_expiry} hari lagi)`;
+    }
+
     // Add prefix if not already present
-    if (!title.startsWith('🔥') && !title.startsWith('💰')) {
+    if (!title.startsWith('🔥') && !title.startsWith('💰') && !title.startsWith('⚠️') && !title.startsWith('📢')) {
       title = prefix + title;
     }
 
@@ -174,7 +188,7 @@ export class RSSGenerator {
 
     // Gather data
     const salary = job.salary_range || 'Gaji nego';
-    const jobType = job.detail?.job_type || 'Full-time';
+    const jobType = job.job_type_name || job.detail?.job_type_name || 'Full-time';
     const industry = job.industry_name || 'General';
     const education = job.detail?.requirements?.education_min || 'Pendidikan variatif';
 
@@ -190,6 +204,16 @@ export class RSSGenerator {
       const hashtags = this.generateItemHashtags(job);
       description += '\n\n' + hashtags;
     }
+
+    // Add call-to-action and engagement elements
+    if (job.days_until_expiry !== null && job.days_until_expiry <= 7) {
+      description += '\n\n⏰ Deadline: ' + job.days_until_expiry + ' hari lagi! Apply sekarang!';
+    } else {
+      description += '\n\n📌 Apply now: ' + job.frontend_url;
+    }
+
+    // Add engagement prompt
+    description += '\n💡 Share dengan teman yang cocok untuk posisi ini!';
 
     // Truncate if too long
     if (description.length > maxLength) {
@@ -320,10 +344,11 @@ export class RSSGenerator {
    * @returns {string} - Item URL
    */
   generateItemLink(job) {
-    if (job.detail && job.detail.id) {
-      return `${CONFIG.API_BASE_URL}/vacancies/${job.detail.id}`;
+    // Use frontend URL if available, fallback to API URL
+    if (job.frontend_url) {
+      return job.frontend_url;
     }
-    return `${CONFIG.API_BASE_URL}/vacancies/${job.id}`;
+    return `${CONFIG.KARIRHUB_BASE_URL}/lowongan-dalam-negeri/lowongan/${job.id}`;
   }
 
   /**
@@ -412,36 +437,126 @@ export class RSSGenerator {
    * @returns {string} - Hashtag string
    */
   generateItemHashtags(job) {
-    const hashtags = ['#lowongankerja', '#karir', '#loker'];
+    const hashtags = new Set(['#lowongankerja', '#karir', '#loker']);
 
-    // Location hashtags
+    // Location hashtags - remove "kota" prefix and optimize
     if (job.city_name) {
-      const locationTag = this.formatHashtag(job.city_name);
-      if (locationTag) hashtags.push(locationTag);
+      const cleanLocation = job.city_name
+        .toLowerCase()
+        .replace(/^kota\s+/i, '') // Remove "kota" prefix
+        .replace(/^kabupaten\s+/i, 'kab') // Replace "kabupaten" with "kab"
+        .replace(/\s+/g, '');
+
+      if (cleanLocation) {
+        hashtags.add(`#loker${cleanLocation}`);
+      }
     }
 
     // Industry hashtags
     if (job.industry_name && job.industry_name !== 'General') {
-      const industryTag = `#lowongan${this.formatHashtag(job.industry_name)}`;
-      hashtags.push(industryTag);
+      const cleanIndustry = this.formatHashtag(job.industry_name);
+      if (cleanIndustry) {
+        hashtags.add(`#lowongan${cleanIndustry}`);
+      }
     }
 
-    // Job function hashtags
+    // Education level hashtags
+    if (job.detail?.requirements?.education_min) {
+      const education = job.detail.requirements.education_min.toLowerCase();
+      const educationHashtag = this.getEducationHashtag(education);
+      if (educationHashtag) {
+        hashtags.add(educationHashtag);
+      }
+    }
+
+    // Job function/skill hashtags
     if (job.job_function_name) {
-      const functionTag = this.formatHashtag(job.job_function_name);
-      if (functionTag) hashtags.push(functionTag);
+      const functionHashtag = this.getSkillHashtag(job.job_function_name);
+      if (functionHashtag) {
+        hashtags.add(functionHashtag);
+      }
     }
 
-    // Skills hashtags
-    if (job.skills && Array.isArray(job.skills)) {
-      const skillTags = job.skills.slice(0, 3).map(skill => {
-        const tag = this.formatHashtag(skill);
-        return tag ? `#${tag}` : null;
-      }).filter(Boolean);
-      hashtags.push(...skillTags);
+    // Urgency hashtags based on expiry
+    if (job.days_until_expiry !== null && job.days_until_expiry <= 7) {
+      hashtags.add('#urgentloker');
     }
 
-    return hashtags.slice(0, 8).join(' ');
+    // Experience level hashtags
+    const title = (job.title || '').toLowerCase();
+    if (title.includes('fresh') || title.includes('magang') || title.includes('intern')) {
+      hashtags.add('#lokerfreshgraduate');
+    }
+
+    // Convert to array and limit
+    const hashtagArray = Array.from(hashtags).slice(0, 12);
+    return hashtagArray.join(' ');
+  }
+
+  /**
+   * Get education level hashtag
+   * @param {string} education - Education level text
+   * @returns {string|null} - Education hashtag or null
+   */
+  getEducationHashtag(education) {
+    const eduKeywords = {
+      'sma': '#lokersma',
+      'smk': '#lokersmk',
+      's1': '#lokers1',
+      's2': '#lokers2',
+      's3': '#lokers3',
+      'd1': '#lokerd1',
+      'd2': '#lokerd2',
+      'd3': '#lokerd3',
+      'd4': '#lokerd4',
+      'sarjana': '#lokers1',
+      'diploma': '#lokerd3',
+      'bachelor': '#lokers1',
+      'master': '#lokers2',
+      'doctoral': '#lokers3'
+    };
+
+    for (const [key, hashtag] of Object.entries(eduKeywords)) {
+      if (education.includes(key)) {
+        return hashtag;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get skill-based hashtag
+   * @param {string} skill - Skill text
+   * @returns {string|null} - Skill hashtag or null
+   */
+  getSkillHashtag(skill) {
+    const skillKeywords = {
+      'sales': '#lokersales',
+      'marketing': '#lokermarketing',
+      'accounting': '#lokeraccounting',
+      'engineering': '#lokerengineering',
+      'hr': '#lokerhr',
+      'human resource': '#lokerhr',
+      'customer service': '#lokercustomerservice',
+      'admin': '#lokeradmin',
+      'administrasi': '#lokeradmin',
+      'driver': '#lokerdriver',
+      'guru': '#lokerguru',
+      'teacher': '#lokerguru',
+      'programming': '#lokerprogramming',
+      'design': '#lokerdesign',
+      'staff': '#lokerstaff'
+    };
+
+    const lowerSkill = skill.toLowerCase();
+    for (const [key, hashtag] of Object.entries(skillKeywords)) {
+      if (lowerSkill.includes(key)) {
+        return hashtag;
+      }
+    }
+
+    return null;
   }
 
   /**

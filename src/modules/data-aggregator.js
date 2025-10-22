@@ -197,7 +197,14 @@ export class DataAggregator {
         social_media_content: this.generateSocialMediaContent(job, jobDetail),
         content_html: this.generateFullContent(job, jobDetail),
         application_deadline_formatted: this.formatDeadline(jobDetail?.application_deadline),
-        posted_date_formatted: this.formatDate(job.created_at || job.published_at || jobDetail?.posted_date)
+        posted_date_formatted: this.formatDate(job.created_at || job.published_at || jobDetail?.posted_date),
+        // Add new date fields
+        published_at: job.published_at || job.created_at || jobDetail?.posted_date,
+        expires_at: job.expires_at || jobDetail?.expires_at,
+        // Add urgency calculation
+        days_until_expiry: this.calculateDaysUntilExpiry(job.expires_at || jobDetail?.expires_at),
+        // Add frontend URL
+        frontend_url: `${CONFIG.KARIRHUB_BASE_URL}/lowongan-dalam-negeri/lowongan/${job.id}`
       };
 
       return enrichedJob;
@@ -255,7 +262,14 @@ export class DataAggregator {
       social_media_content: this.generateBasicSocialMediaContent(job),
       content_html: this.generateBasicContent(job),
       application_deadline_formatted: 'Informasi deadline tidak tersedia',
-      posted_date_formatted: this.formatDate(job.created_at || job.published_at)
+      posted_date_formatted: this.formatDate(job.created_at || job.published_at),
+      // Add new date fields
+      published_at: job.published_at || job.created_at,
+      expires_at: job.expires_at,
+      // Add urgency calculation
+      days_until_expiry: this.calculateDaysUntilExpiry(job.expires_at),
+      // Add frontend URL
+      frontend_url: `${CONFIG.KARIRHUB_BASE_URL}/lowongan-dalam-negeri/lowongan/${job.id}`
     };
   }
 
@@ -280,6 +294,44 @@ export class DataAggregator {
     }
 
     return 'Gaji nego';
+  }
+
+  /**
+   * Calculate days until expiry
+   * @param {string} expiresAt - Expiry date string
+   * @returns {number|null} - Days until expiry or null
+   */
+  calculateDaysUntilExpiry(expiresAt) {
+    if (!expiresAt) return null;
+
+    try {
+      const expiryDate = new Date(expiresAt);
+      const today = new Date();
+      const diffTime = expiryDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Format job type for display
+   * @param {Object|string} jobType - Job type object or string
+   * @returns {string} - Formatted job type
+   */
+  formatJobType(jobType) {
+    if (!jobType) return 'Full-time';
+
+    if (typeof jobType === 'string') {
+      return jobType;
+    }
+
+    if (typeof jobType === 'object' && jobType.name) {
+      return jobType.name;
+    }
+
+    return 'Full-time';
   }
 
   /**

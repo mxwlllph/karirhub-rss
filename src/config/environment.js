@@ -27,6 +27,7 @@ const BASE_CONFIG = {
 
   // Service URLs
   BASE_URL: 'https://karirhub-rss.tekipik.workers.dev',
+  KARIRHUB_BASE_URL: 'https://karirhub.kemnaker.go.id',
 
   // Social Media Configuration
   SOCIAL_MEDIA_HASHTAGS: ['#lowongankerja', '#karir', '#loker'],
@@ -66,6 +67,7 @@ const ENVIRONMENTS = {
     MAX_JOBS_PER_FEED: 5,
     ENABLE_ANALYTICS: false,
     BASE_URL: 'http://localhost:8787',
+    KARIRHUB_BASE_URL: 'https://karirhub.kemnaker.go.id',
   },
 
   staging: {
@@ -75,6 +77,7 @@ const ENVIRONMENTS = {
     CACHE_TTL: 900, // 15 minutes
     MAX_JOBS_PER_FEED: 10,
     BASE_URL: 'https://karirhub-rss-staging.workers.dev',
+    KARIRHUB_BASE_URL: 'https://karirhub.kemnaker.go.id',
   },
 
   production: {
@@ -84,6 +87,7 @@ const ENVIRONMENTS = {
     CACHE_TTL: 1800, // 30 minutes
     MAX_JOBS_PER_FEED: 50,
     BASE_URL: 'https://karirhub-rss.tekipik.workers.dev',
+    KARIRHUB_BASE_URL: 'https://karirhub.kemnaker.go.id',
   }
 };
 
@@ -227,7 +231,7 @@ export const HASHTAG_CONFIG = {
   locationPrefix: '#loker',
   industryPrefix: '#lowongan',
   functionPrefix: '#',
-  maxHashtags: 8,
+  maxHashtags: 12,
   customHashtags: {
     'automotive': '#otomotif',
     'technology': '#teknologi',
@@ -235,6 +239,44 @@ export const HASHTAG_CONFIG = {
     'education': '#pendidikan',
     'finance': '#keuangan',
     'manufacturing': '#manufaktur'
+  },
+  // Education level hashtags
+  educationLevels: {
+    'SMA': '#lokersma',
+    'SMK': '#lokersmk',
+    'D1': '#lokerd1',
+    'D2': '#lokerd2',
+    'D3': '#lokerd3',
+    'D4': '#lokerd4',
+    'S1': '#lokers1',
+    'S2': '#lokers2',
+    'S3': '#lokers3',
+    'sarjana': '#lokers1',
+    'diploma': '#lokerd3',
+    'fresh graduate': '#lokerfreshgraduate',
+    'magang': '#lokermagang',
+    'internship': '#lokerinternship'
+  },
+  // Skill-based hashtags
+  skills: {
+    'programming': '#lokerprogramming',
+    'design': '#lokerdesign',
+    'sales': '#lokersales',
+    'marketing': '#lokermarketing',
+    'accounting': '#lokeraccounting',
+    'engineering': '#lokerengineering',
+    'hr': '#lokerhr',
+    'customer service': '#lokercustomerservice',
+    'admin': '#lokeradmin',
+    'driver': '#lokerdriver',
+    'guru': '#lokerguru',
+    'staff': '#lokerstaff'
+  },
+  // Urgency and engagement hashtags
+  urgency: {
+    'urgent': '#urgentloker',
+    'immediate': '#lokercepat',
+    'deadline': '#lokerdeadline'
   }
 };
 
@@ -349,6 +391,7 @@ export function getConfig() {
     ...ENVIRONMENTS[environment],
     API_BASE_URL: globalThis.API_BASE_URL || ENVIRONMENTS[environment].API_BASE_URL,
     BASE_URL: globalThis.BASE_URL || productionBaseUrl || ENVIRONMENTS[environment].BASE_URL,
+    KARIRHUB_BASE_URL: globalThis.KARIRHUB_BASE_URL || ENVIRONMENTS[environment].KARIRHUB_BASE_URL,
     CACHE_TTL: parseInt(globalThis.CACHE_TTL) || ENVIRONMENTS[environment].CACHE_TTL,
     MAX_JOBS_PER_FEED: parseInt(globalThis.MAX_JOBS_PER_FEED) || ENVIRONMENTS[environment].MAX_JOBS_PER_FEED,
     RSS_TITLE: globalThis.RSS_TITLE || ENVIRONMENTS[environment].RSS_TITLE,
