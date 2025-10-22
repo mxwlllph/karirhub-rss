@@ -150,13 +150,17 @@ export class RSSGenerator {
     const cleanTitle = this.cleanText(job.title, 50);
     const cleanCompany = this.cleanText(job.company_name, 30);
     const cleanLocation = this.cleanText(location, 25);
+    const cleanSalary = this.cleanText(job.salary_range || 'Gaji Kompetitif', 20);
+    const cleanAgeRange = this.cleanText(job.age_range || 'Usia bebas', 15);
 
     // Apply template
     let title = template
       .replace('{emoji}', emoji)
       .replace('{title}', cleanTitle)
       .replace('{company}', cleanCompany)
-      .replace('{location}', cleanLocation);
+      .replace('{location}', cleanLocation)
+      .replace('{salary}', cleanSalary)
+      .replace('{age_range}', cleanAgeRange);
 
     // Add urgency indicator for expiring jobs
     if (job.days_until_expiry !== null && job.days_until_expiry <= 7) {
