@@ -256,6 +256,15 @@ export class RSSGenerator {
 
     // Job details
     if (job.detail) {
+      // Debug job type processing in RSS generator (always log)
+      console.log('🔍 RSS Generator job type debug:', {
+        hasDetail: !!job.detail,
+        hasJobType: !!job.detail?.job_type,
+        originalJobType: job.detail?.job_type,
+        formattedJobType: job.detail?.job_type ? this.formatJobType(job.detail.job_type) : 'NO_JOB_TYPE',
+        formattedType: typeof job.detail?.job_type
+      });
+
       // Job type
       if (job.detail.job_type) {
         const formattedJobType = this.formatJobType(job.detail.job_type);
@@ -653,7 +662,7 @@ export class RSSGenerator {
 
   /**
    * Format publication date
-   * @param {string} dateString - Date string in various formats (ISO, MySQL datetime, etc.)
+   * @param {string|number} dateString - Date string/number in various formats (Unix timestamp, MySQL datetime, ISO, etc.)
    * @returns {string} - RFC 822 formatted date
    */
   formatPubDate(dateString) {
@@ -664,8 +673,13 @@ export class RSSGenerator {
     try {
       let date;
 
+      // Handle Unix timestamp (number or numeric string): 1761113794
+      if (typeof dateString === 'number' || (typeof dateString === 'string' && /^\d{10}$/.test(dateString))) {
+        const timestamp = typeof dateString === 'number' ? dateString : parseInt(dateString, 10);
+        date = new Date(timestamp * 1000); // Convert to milliseconds
+      }
       // Handle MySQL datetime format: "2025-10-21 20:16:32"
-      if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      else if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
         // MySQL datetime format - treat as UTC
         const [datePart, timePart] = dateString.split(' ');
         const [year, month, day] = datePart.split('-').map(Number);
@@ -678,13 +692,13 @@ export class RSSGenerator {
 
       // Validate date is valid
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date after parsing:', dateString);
+        console.warn('Invalid date after parsing:', dateString, 'type:', typeof dateString);
         return this.currentDate;
       }
 
       return date.toUTCString();
     } catch (error) {
-      console.warn('Error formatting date:', dateString, error);
+      console.warn('Error formatting date:', dateString, 'type:', typeof dateString, error);
       return this.currentDate;
     }
   }

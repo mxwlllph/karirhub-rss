@@ -633,7 +633,7 @@ ${hashtags}`;
       if (detail.job_type) {
         content += `<div class="job-type">
           <h3>Tipe Pekerjaan:</h3>
-          <p>${detail.job_type}</p>
+          <p>${this.formatJobType(detail.job_type)}</p>
         </div>`;
       }
 

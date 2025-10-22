@@ -12,6 +12,30 @@ import { Analytics } from './modules/analytics.js';
 import { CONFIG } from './config/environment.js';
 import { validateRequest, handleError, logInfo, logError } from './utils/helpers.js';
 
+// Import formatJobType helper function
+function formatJobType(jobType) {
+  if (!jobType) return 'Full-time';
+
+  // Handle object
+  if (typeof jobType === 'object' && jobType !== null) {
+    const possibleFields = ['name', 'title', 'label', 'job_type_name', 'type'];
+    for (const field of possibleFields) {
+      if (jobType[field]) {
+        return jobType[field];
+      }
+    }
+    console.warn('Unexpected job_type object structure:', jobType);
+    return 'Full-time';
+  }
+
+  // Handle string
+  if (typeof jobType === 'string') {
+    return jobType;
+  }
+
+  return 'Full-time';
+}
+
 /**
  * Main request handler
  */
@@ -384,7 +408,7 @@ function generateJSONFeed(jobs) {
       ].filter(Boolean),
       _social: {
         title: `🔥 Lowongan ${job.title} di ${job.company_name} - ${job.city_name}`,
-        description: `${job.salary_range || 'Gaji nego'} • ${job.detail?.job_type || 'Full-time'} • ${job.industry_name}`,
+        description: `${job.salary_range || 'Gaji nego'} • ${job.detail?.job_type ? formatJobType(job.detail.job_type) : 'Full-time'} • ${job.industry_name}`,
         hashtags: `#lowongankerja #karir #loker #${job.city_name?.toLowerCase().replace(/\s+/g, '')} #${job.industry_name?.toLowerCase().replace(/\s+/g, '')}`
       }
     }))

@@ -29,7 +29,8 @@
       "Bash(wrangler auth login:*)",
       "WebFetch(domain:karirhub-rss.tekipik.workers.dev)",
       "Bash(node:*)",
-      "WebFetch(domain:karirhub-rss.tepipik.workers.dev)"
+      "WebFetch(domain:karirhub-rss.tepipik.workers.dev)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []
