@@ -377,11 +377,12 @@ export const ERROR_MESSAGES = {
 
 /**
  * Get configuration for current environment
+ * @param {Object} env - Environment variables from Cloudflare Workers
  * @returns {Object} Environment-specific configuration
  */
-export function getConfig() {
-  // Prioritize environment variable from wrangler.toml, fallback to detection
-  const environment = globalThis.ENVIRONMENT || detectEnvironment();
+export function getConfig(env = null) {
+  // Determine environment (from env parameter or detection)
+  const environment = env?.ENVIRONMENT || detectEnvironment();
 
   // Detect production URL dynamically
   const productionBaseUrl = detectProductionBaseUrl();
@@ -389,20 +390,20 @@ export function getConfig() {
   // Override with environment variables from Cloudflare Workers
   const config = {
     ...ENVIRONMENTS[environment],
-    API_BASE_URL: globalThis.API_BASE_URL || ENVIRONMENTS[environment].API_BASE_URL,
-    BASE_URL: globalThis.BASE_URL || productionBaseUrl || ENVIRONMENTS[environment].BASE_URL,
-    KARIRHUB_BASE_URL: globalThis.KARIRHUB_BASE_URL || ENVIRONMENTS[environment].KARIRHUB_BASE_URL,
-    CACHE_TTL: parseInt(globalThis.CACHE_TTL) || ENVIRONMENTS[environment].CACHE_TTL,
-    MAX_JOBS_PER_FEED: parseInt(globalThis.MAX_JOBS_PER_FEED) || ENVIRONMENTS[environment].MAX_JOBS_PER_FEED,
-    RSS_TITLE: globalThis.RSS_TITLE || ENVIRONMENTS[environment].RSS_TITLE,
-    RSS_DESCRIPTION: globalThis.RSS_DESCRIPTION || ENVIRONMENTS[environment].RSS_DESCRIPTION,
-    ENABLE_ANALYTICS: globalThis.ENABLE_ANALYTICS === 'true' || ENVIRONMENTS[environment].ENABLE_ANALYTICS,
-    LOG_LEVEL: globalThis.LOG_LEVEL || ENVIRONMENTS[environment].LOG_LEVEL,
+    API_BASE_URL: env?.API_BASE_URL || ENVIRONMENTS[environment].API_BASE_URL,
+    BASE_URL: env?.BASE_URL || productionBaseUrl || ENVIRONMENTS[environment].BASE_URL,
+    KARIRHUB_BASE_URL: env?.KARIRHUB_BASE_URL || ENVIRONMENTS[environment].KARIRHUB_BASE_URL,
+    CACHE_TTL: parseInt(env?.CACHE_TTL) || ENVIRONMENTS[environment].CACHE_TTL,
+    MAX_JOBS_PER_FEED: parseInt(env?.MAX_JOBS_PER_FEED) || ENVIRONMENTS[environment].MAX_JOBS_PER_FEED,
+    RSS_TITLE: env?.RSS_TITLE || ENVIRONMENTS[environment].RSS_TITLE,
+    RSS_DESCRIPTION: env?.RSS_DESCRIPTION || ENVIRONMENTS[environment].RSS_DESCRIPTION,
+    ENABLE_ANALYTICS: env?.ENABLE_ANALYTICS === 'true' || ENVIRONMENTS[environment].ENABLE_ANALYTICS,
+    LOG_LEVEL: env?.LOG_LEVEL || ENVIRONMENTS[environment].LOG_LEVEL,
   };
 
   // Add runtime information
   config.RUNTIME = {
-    startTime: globalThis.startTime,
+    startTime: Date.now(), // Use current time as fallback
     version: config.VERSION,
     environment: environment,
   };

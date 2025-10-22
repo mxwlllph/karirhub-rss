@@ -9,7 +9,7 @@ import { DataAggregator } from './modules/data-aggregator.js';
 import { RSSGenerator } from './modules/rss-generator.js';
 import { CacheManager } from './modules/cache-manager.js';
 import { Analytics } from './modules/analytics.js';
-import { CONFIG } from './config/environment.js';
+import { getConfig } from './config/environment.js';
 import { validateRequest, handleError, logInfo, logError } from './utils/helpers.js';
 
 // Import formatJobType helper function
@@ -37,20 +37,22 @@ function formatJobType(jobType) {
 }
 
 /**
- * Main request handler
+ * Cloudflare Worker RSS Feed Generator
+ * Main export for Cloudflare Workers
  */
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
-});
 
 /**
  * Handle incoming requests
  * @param {Request} request - The incoming request
+ * @param {Object} env - Environment variables (KV, D1 bindings)
  * @returns {Promise<Response>} - The response
  */
-async function handleRequest(request) {
+async function handleRequest(request, env) {
   const startTime = Date.now();
   const url = new URL(request.url);
+
+  // Get configuration with environment bindings
+  const CONFIG = getConfig(env);
 
   try {
     logInfo('Request received', {
@@ -69,16 +71,16 @@ async function handleRequest(request) {
     switch (url.pathname) {
       case '/':
       case '/rss':
-        return await handleRSSFeed(request, startTime);
+        return await handleRSSFeed(request, env, CONFIG, startTime);
 
       case '/json':
-        return await handleJSONFeed(request, startTime);
+        return await handleJSONFeed(request, env, CONFIG, startTime);
 
       case '/health':
-        return await handleHealthCheck();
+        return await handleHealthCheck(env, CONFIG);
 
       case '/stats':
-        return await handleStats();
+        return await handleStats(env, CONFIG);
 
       default:
         return new Response(`
@@ -110,19 +112,21 @@ async function handleRequest(request) {
 /**
  * Handle RSS feed generation
  * @param {Request} request - The incoming request
+ * @param {Object} env - Environment variables (KV, D1 bindings)
+ * @param {Object} CONFIG - Configuration object
  * @param {number} startTime - Request start time
  * @returns {Promise<Response>} - RSS feed response
  */
-async function handleRSSFeed(request, startTime) {
+async function handleRSSFeed(request, env, CONFIG, startTime) {
   try {
     logInfo('Generating RSS feed');
 
-    // Initialize components with fallback handling
-    const cacheManager = new CacheManager(globalThis.RSS_CACHE || null);
+    // Initialize components with environment bindings
+    const cacheManager = new CacheManager(env.RSS_CACHE || null);
     const apiFetcher = new APIFetcher(CONFIG.API_BASE_URL);
     const dataAggregator = new DataAggregator(apiFetcher, cacheManager);
     const rssGenerator = new RSSGenerator();
-    const analytics = new Analytics(globalThis.RSS_ANALYTICS, globalThis.RSS_CACHE || null);
+    const analytics = new Analytics(env.RSS_ANALYTICS, env.RSS_CACHE || null);
 
     // Check cache first
     const cacheKey = 'rss_feed_main';
@@ -187,18 +191,20 @@ async function handleRSSFeed(request, startTime) {
 /**
  * Handle JSON feed generation
  * @param {Request} request - The incoming request
+ * @param {Object} env - Environment variables (KV, D1 bindings)
+ * @param {Object} CONFIG - Configuration object
  * @param {number} startTime - Request start time
  * @returns {Promise<Response>} - JSON feed response
  */
-async function handleJSONFeed(request, startTime) {
+async function handleJSONFeed(request, env, CONFIG, startTime) {
   try {
     logInfo('Generating JSON feed');
 
-    // Initialize components with fallback handling
-    const cacheManager = new CacheManager(globalThis.RSS_CACHE || null);
+    // Initialize components with environment bindings
+    const cacheManager = new CacheManager(env.RSS_CACHE || null);
     const apiFetcher = new APIFetcher(CONFIG.API_BASE_URL);
     const dataAggregator = new DataAggregator(apiFetcher, cacheManager);
-    const analytics = new Analytics(globalThis.RSS_ANALYTICS, globalThis.RSS_CACHE || null);
+    const analytics = new Analytics(env.RSS_ANALYTICS, env.RSS_CACHE || null);
 
     // Check cache
     const cacheKey = 'json_feed_main';
@@ -252,12 +258,14 @@ async function handleJSONFeed(request, startTime) {
 
 /**
  * Handle health check requests
+ * @param {Object} env - Environment variables (KV, D1 bindings)
+ * @param {Object} CONFIG - Configuration object
  * @returns {Promise<Response>} - Health check response
  */
-async function handleHealthCheck() {
+async function handleHealthCheck(env, CONFIG) {
   try {
-    // Initialize components with fallback handling
-    const cacheManager = new CacheManager(globalThis.RSS_CACHE || null);
+    // Initialize components with environment bindings
+    const cacheManager = new CacheManager(env.RSS_CACHE || null);
     const apiFetcher = new APIFetcher(CONFIG.API_BASE_URL);
 
     // Check API connectivity
@@ -273,7 +281,7 @@ async function handleHealthCheck() {
       timestamp: new Date().toISOString(),
       version: CONFIG.VERSION,
       environment: CONFIG.ENVIRONMENT,
-      uptime: Date.now() - globalThis.startTime,
+      uptime: 0, // Worker uptime not available in this context
       services: {
         api: {
           status: apiTest.code === 200 ? 'healthy' : 'unhealthy',
@@ -314,12 +322,14 @@ async function handleHealthCheck() {
 
 /**
  * Handle statistics requests
+ * @param {Object} env - Environment variables (KV, D1 bindings)
+ * @param {Object} CONFIG - Configuration object
  * @returns {Promise<Response>} - Statistics response
  */
-async function handleStats() {
+async function handleStats(env, CONFIG) {
   try {
     // Check if analytics binding is available
-    if (!globalThis.RSS_ANALYTICS) {
+    if (!env.RSS_ANALYTICS) {
       return new Response(JSON.stringify({
         error: 'Analytics unavailable',
         message: 'RSS_ANALYTICS binding not found'
@@ -329,7 +339,7 @@ async function handleStats() {
       });
     }
 
-    const analytics = new Analytics(globalThis.RSS_ANALYTICS, globalThis.RSS_CACHE || null);
+    const analytics = new Analytics(env.RSS_ANALYTICS, env.RSS_CACHE || null);
     const stats = await analytics.getStats();
 
     return new Response(JSON.stringify(stats, null, 2), {
@@ -415,8 +425,6 @@ function generateJSONFeed(jobs) {
   };
 }
 
-// Initialize global start time for uptime tracking
-globalThis.startTime = Date.now();
 
 export default {
   fetch: handleRequest
