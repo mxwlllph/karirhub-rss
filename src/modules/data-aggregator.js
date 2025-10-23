@@ -294,6 +294,15 @@ export class DataAggregator {
       return 'Gaji Kompetitif';
     }
 
+    // Debug: Log actual salary structure
+    console.log('DEBUG formatSalaryRange - salary structure:', {
+      show_salary: salary.show_salary,
+      min_salary_amount: salary.min_salary_amount,
+      max_salary_amount: salary.max_salary_amount,
+      min_salary: salary.min_salary,
+      max_salary: salary.max_salary
+    });
+
     // Check if salary should be shown
     if (salary.show_salary === false) {
       return 'Gaji Kompetitif';
