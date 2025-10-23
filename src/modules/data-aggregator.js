@@ -193,7 +193,7 @@ export class DataAggregator {
         title: job.title || job.job_title || jobDetail?.title,
         // Add derived fields
         detail: jobDetail,
-        salary_range: this.formatSalaryRange(jobDetail?.salary),
+        salary_range: this.formatSalaryRange(job.salary || jobDetail?.salary),
         full_location: this.formatFullLocation(job),
         requirements_text: this.formatRequirements(jobDetail?.requirements),
         benefits_text: this.formatBenefits(jobDetail?.salary?.benefits),
