@@ -303,11 +303,6 @@ export class DataAggregator {
       max_salary: salary.max_salary
     });
 
-    // Check if salary should be shown
-    if (salary.show_salary === false) {
-      return 'Gaji Kompetitif';
-    }
-
     // Handle actual API structure: min_salary_amount, max_salary_amount
     if (salary.min_salary_amount !== undefined && salary.max_salary_amount !== undefined) {
       const minAmount = salary.min_salary_amount;

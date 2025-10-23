@@ -82,6 +82,9 @@ async function handleRequest(request, env) {
       case '/stats':
         return await handleStats(env, CONFIG);
 
+      case '/clear-cache':
+        return await handleClearCache(env, CONFIG);
+
       default:
         return new Response(`
           <html>
@@ -353,6 +356,56 @@ async function handleStats(env, CONFIG) {
     return new Response(JSON.stringify({
       error: 'Stats unavailable',
       message: error.message
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+/**
+ * Handle cache clearing requests
+ * @param {Object} env - Environment variables (KV, D1 bindings)
+ * @param {Object} CONFIG - Configuration object
+ * @returns {Promise<Response>} - Cache clearing response
+ */
+async function handleClearCache(env, CONFIG) {
+  try {
+    const cacheManager = new CacheManager(env.RSS_CACHE || null);
+
+    // Clear all cache types
+    const jobDetailsCleared = await cacheManager.clear('job_details');
+    const rssCleared = await cacheManager.clear('rss');
+    const jobListingsCleared = await cacheManager.clear('job_listings');
+
+    // Clear ALL cache entries (aggressive approach)
+    const allCleared = await cacheManager.clear();
+
+    const result = {
+      success: true,
+      message: 'All cache cleared successfully',
+      cleared_caches: {
+        job_details: jobDetailsCleared,
+        rss: rssCleared,
+        job_listings: jobListingsCleared,
+        all_entries: allCleared
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    return new Response(JSON.stringify(result, null, 2), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({
+      success: false,
+      message: 'Failed to clear cache',
+      error: error.message,
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
