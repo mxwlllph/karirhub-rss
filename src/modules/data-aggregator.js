@@ -862,7 +862,7 @@ ${hashtags}`;
     content += `<hr>
       <div class="job-source">
         <p><em>Sumber: Kementerian Ketenagakerjaan Indonesia - KarirHub</em></p>
-        <p><small>Lowongan ini dipublikasikan pada ${job.posted_date_formatted || this.formatDate(job.created_at || job.published_at || jobDetail?.posted_date)}</small></p>
+        <p><small>Lowongan ini dipublikasikan pada ${job.posted_date_formatted || this.formatDate(job.created_at || job.published_at)}</small></p>
       </div>`;
 
     return content;
