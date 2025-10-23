@@ -299,7 +299,31 @@ export class DataAggregator {
       return 'Gaji Kompetitif';
     }
 
-    const formatter = new Intl.NumberFormat('id-ID');
+    // Handle actual API structure: min_salary_amount, max_salary_amount
+    if (salary.min_salary_amount !== undefined && salary.max_salary_amount !== undefined) {
+      const minAmount = salary.min_salary_amount;
+      const maxAmount = salary.max_salary_amount;
+
+      // Convert to millions for better readability
+      const minMillions = Math.round(minAmount / 1000000);
+      const maxMillions = Math.round(maxAmount / 1000000);
+
+      return `Rp${minMillions}-${maxMillions} Juta/bulan`;
+    }
+
+    // Handle single min_salary_amount
+    if (salary.min_salary_amount !== undefined && salary.max_salary_amount === undefined) {
+      const minAmount = salary.min_salary_amount;
+      const minMillions = Math.round(minAmount / 1000000);
+      return `Rp${minMillions}+ Juta/bulan`;
+    }
+
+    // Handle single max_salary_amount
+    if (salary.min_salary_amount === undefined && salary.max_salary_amount !== undefined) {
+      const maxAmount = salary.max_salary_amount;
+      const maxMillions = Math.round(maxAmount / 1000000);
+      return `Hingga Rp${maxMillions} Juta/bulan`;
+    }
 
     // Handle new API structure: min_salary, max_salary objects
     if (salary.min_salary && salary.max_salary) {
@@ -838,7 +862,7 @@ ${hashtags}`;
     content += `<hr>
       <div class="job-source">
         <p><em>Sumber: Kementerian Ketenagakerjaan Indonesia - KarirHub</em></p>
-        <p><small>Lowongan ini dipublikasikan pada ${this.formatDate(job.created_at)}</small></p>
+        <p><small>Lowongan ini dipublikasikan pada ${job.posted_date_formatted || this.formatDate(job.created_at || job.published_at || jobDetail?.posted_date)}</small></p>
       </div>`;
 
     return content;
@@ -870,7 +894,7 @@ ${hashtags}`;
       <hr>
       <div class="job-source">
         <p><em>Sumber: Kementerian Ketenagakerjaan Indonesia - KarirHub</em></p>
-        <p><small>Lowongan ini dipublikasikan pada ${this.formatDate(job.created_at)}</small></p>
+        <p><small>Lowongan ini dipublikasikan pada ${job.posted_date_formatted || this.formatDate(job.created_at || job.published_at)}</small></p>
       </div>`;
   }
 
